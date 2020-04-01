@@ -17,12 +17,12 @@ class FiniteAutomaton():
         self.__assert_states(states)
         self.__assert_alphabet(alphabet)
         self.__assert_transitions(transitions, alphabet, states)
-        # Create all the Automaton Attributes if asserts are passed
+        # Create all the Automaton Attributes
         self.__states = set(states.keys())
         self.__initial_states = set(
-            filter(lambda state: states[state] == 'I', states))
+            filter(lambda state: 'I' in states[state], states))
         self.__final_states = set(
-            filter(lambda state: states[state] == 'F', states))
+            filter(lambda state: 'F' in states[state], states))
         self.__alphabet = set(alphabet)
         self.__transitions = transitions
 
@@ -45,13 +45,17 @@ class FiniteAutomaton():
         while not queue.empty():
             curr_state = queue.get()
             if curr_state not in transitions:
+                # Add the state to the states set
                 states.add(curr_state)
                 if self.__is_final_state(curr_state):
                     final_states.add(curr_state)
+                # Create a transition for each symbol
                 transitions[curr_state] = dict()
                 for symbol in self.__alphabet:
                     new_state = self.__get_next_state(curr_state, symbol)
                     if len(new_state) == 0:
+                        # If no state where found, the next
+                        # state for the given symbol is an empty set
                         new_state = empty_set
                         if empty_set not in transitions:
                             states.add(empty_set)
@@ -63,13 +67,12 @@ class FiniteAutomaton():
         self.__final_states = final_states
         self.__transitions = transitions
         self.__simplify_states()
-        print("Automaton determinized! Press 'S' to see the changes")
+        print("Automaton determinized! Press 'S' to see the changes\n")
 
     def read(self, word):
         if not self.is_deterministic():
             print("\nThis automaton is non-deterministic")
             self.determinize()
-            print()
         init_state = list(self.__initial_states)[0]
         print("Reading word...")
         self.__read(word, init_state)
@@ -78,7 +81,6 @@ class FiniteAutomaton():
         if not self.is_deterministic():
             print("\nThis automaton is non-deterministic")
             self.determinize()
-            print()
         # TODO: IMPLEMENT MINIMIZATION
         pass
 
@@ -141,7 +143,7 @@ class FiniteAutomaton():
         self.__transitions = transitions
 
     def __read(self, word, state):
-        if len(word) < 1:
+        if len(word) < 1 or word == lmbda:
             if state in self.__final_states:
                 print("WORD ACCEPTED")
             else:
@@ -152,9 +154,9 @@ class FiniteAutomaton():
             print(f"SYMBOL {symbol} NOT RECOGNIZED => WORD NOT ACCEPTED")
             return
         next_state = self.__transitions[state][symbol][0]
-        next_word = word[1:]
+        next_word = lmbda if len(word) <= 1 else word[1:]
         print(
-            f"\t({state}, {word}) => ({next_state}, {lmbda if len(next_word) <= 0 else next_word})")
+            f"\t({state}, {word}) => ({next_state}, {next_word})")
         self.__read(next_word, next_state)
 
     def __get_next_state(self, curr_state, symbol):
@@ -178,9 +180,18 @@ class FiniteAutomaton():
     def __assert_states(self, states):
         if not isinstance(states, dict):
             raise TypeError("Bad states type, has to be a map")
-        if list(states.values()).count('I') <= 0:
+        has_initial = False
+        has_final = False
+        for value in states.values():
+            if not isinstance(value, list):
+                raise TypeError("Bad states value, has to be a list")
+            if 'I' in value:
+                has_initial = True
+            if 'F' in value:
+                has_final = True
+        if not has_initial:
             raise ValueError("States map doesn't has an initial state")
-        if list(states.values()).count('F') <= 0:
+        if not has_final:
             raise ValueError("States map does not has a final state")
 
     def __assert_alphabet(self, alphabet):
