@@ -32,10 +32,10 @@ if __name__ == '__main__':
         while True:
             option = input(">> ").lower()
             if option == 'd':
-                if not automat.is_deterministic():
-                     automat.determinize()
-                else:
+                if automat.is_deterministic():
                     print("This automaton is already determinized")
+                    continue
+                automat.determinize()
             elif option == 'm':
                 automat.minimize()
             elif option == 'read':
