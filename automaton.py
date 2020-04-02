@@ -35,41 +35,31 @@ class FiniteAutomaton():
         using BFS algorithm with a Queue
         """
         queue = Queue()
-        states = set()
-        initial_state = tuple(self.__initial_states)
-        final_states = set()
         transitions = dict()
-        # Start the algorithm
+        initial_state = tuple(self.__initial_states)
         queue.put(initial_state)
         print("Determinizing automaton... ")
         while not queue.empty():
             curr_state = queue.get()
             if curr_state not in transitions:
-                # Add the state to the states set
-                states.add(curr_state)
-                if self.__is_final_state(curr_state):
-                    final_states.add(curr_state)
-                # Create a transition for each symbol
                 transitions[curr_state] = dict()
                 for symbol in self.__alphabet:
-                    new_state = self.__get_next_state(curr_state, symbol)
-                    if len(new_state) == 0:
-                        # If no state where found, the next
-                        # state for the given symbol is an empty set
-                        new_state = empty_set
+                    next_state = self.__get_next_state(curr_state, symbol)
+                    if next_state == empty_set:
                         if empty_set not in transitions:
-                            states.add(empty_set)
                             self.__add_empty_set(transitions)
-                    transitions[curr_state][symbol] = new_state
-                    queue.put(new_state)
-        self.__states = states
+                    transitions[curr_state][symbol] = [next_state]
+                    queue.put(next_state)
+        self.__states = set(transitions.keys())
         self.__initial_states = {initial_state}
-        self.__final_states = final_states
+        self.__final_states = set(
+            filter(lambda state: self.__is_final_state(state), transitions.keys()))
         self.__transitions = transitions
-        self.__simplify_states()
         print("Automaton determinized! Press 'S' to see the changes\n")
 
     def read(self, word):
+        """ Represents word reading
+        """
         if not self.is_deterministic():
             print("\nThis automaton is non-deterministic")
             self.determinize()
@@ -107,41 +97,6 @@ class FiniteAutomaton():
     # ----------------- PRIVATE METHODS -------------------
     # -----------------------------------------------------
 
-    def __simplify_states(self):
-        """This method transform every tuple of states
-            to a single state represented by a number
-        """
-        transformer = dict()
-        transitions = dict()
-        new_states = set()
-        new_final_states = set()
-        new_init_states = set()
-        # Build the transformer
-        i = 0
-        for state in self.__transitions.keys():
-            transformer[state] = str(i)
-            i += 1
-        # Transform transition
-        for state, transition in self.__transitions.items():
-            new_state = transformer[state]
-            transitions[new_state] = dict()
-            for symbol in self.__alphabet:
-                dest_state = self.__transitions[state][symbol]
-                transitions[new_state][symbol] = [transformer[dest_state]]
-        # Transform each state
-        for state in self.__states:
-            new_state = transformer[state]
-            if state in self.__initial_states:
-                new_init_states.add(new_state)
-            elif state in self.__final_states:
-                new_final_states.add(new_state)
-            new_states.add(new_state)
-        # Reassign the state sets and transitions map
-        self.__states = new_states
-        self.__initial_states = new_init_states
-        self.__final_states = new_final_states
-        self.__transitions = transitions
-
     def __read(self, word, state):
         if len(word) < 1 or word == lmbda:
             if state in self.__final_states:
@@ -160,15 +115,17 @@ class FiniteAutomaton():
         self.__read(next_word, next_state)
 
     def __get_next_state(self, curr_state, symbol):
-        new_state = list()
+        new_state = set()
         for state in curr_state:
-            new_state.extend(self.__transitions[state][symbol])
+            new_state.update(set(self.__transitions[state][symbol]))
+        if len(new_state) == 0:
+            return empty_set
         return tuple(new_state)
 
     def __add_empty_set(self, transitions):
         transitions[empty_set] = dict()
         for letter in self.__alphabet:
-            transitions[empty_set][letter] = empty_set
+            transitions[empty_set][letter] = [empty_set]
 
     def __is_final_state(self, t):
         for elem in t:
