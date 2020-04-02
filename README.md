@@ -5,7 +5,7 @@ I'm working on automaton algebra operations such as concatenation, union and int
 
 To work with the program you need to create a json file with the automaton settings.
 
-The json must have the following attributes:
+The json must contains the following attributes:
 
     + states -> A map whose keys are the label of the state 
                 and whose values are a list with each type
