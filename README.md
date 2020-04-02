@@ -3,7 +3,7 @@
 A program that runs finite automatons and operate with them (reading, determinizing and minimizing). 
 I'm working on automaton algebra operations such as concatenation, union and intersection. ^^
 
-To work with the program you need to create a json file where with the automaton settings.
+To work with the program you need to create a json file with the automaton settings.
 
 The json must have the following attributes:
 
