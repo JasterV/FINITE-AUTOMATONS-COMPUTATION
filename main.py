@@ -1,4 +1,4 @@
-from automaton import FiniteAutomaton
+from automaton import FSM
 from os import system, name
 import json
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
         filename = input("Enter the automaton json filepath: ")
         fp = open(filename, 'r')
         automaton_json = json.load(fp)
-        automat = FiniteAutomaton(automaton_json)
+        automat = FSM(automaton_json)
         show_options()
         while True:
             option = input(">> ").lower()
