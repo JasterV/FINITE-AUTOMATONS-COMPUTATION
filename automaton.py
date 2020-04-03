@@ -1,11 +1,12 @@
 from collections.abc import Iterable
 from queue import Queue
+import random
 
 empty_set = u"\u00F8"
 lmbda = u"\u03BB"
 
 
-class FSM():
+class FA():
     def __init__(self, json: dict):
         try:
             states = json["states"]
@@ -51,7 +52,7 @@ class FSM():
                     transitions[curr_state][symbol] = [next_state]
                     queue.put(next_state)
         self.__states = set(transitions.keys())
-        self.__initial_states = {initial_state}
+        self.__initial_states = set([initial_state])
         self.__final_states = set(
             filter(lambda state: self.__is_final_state(state), transitions.keys()))
         self.__transitions = transitions
@@ -71,8 +72,8 @@ class FSM():
         if not self.is_deterministic():
             print("\nThis automaton is non-deterministic")
             self.determinize()
-        # TODO: IMPLEMENT MINIMIZATION
-        pass
+        eq_classes = [self.__states - self.__final_states, self.__final_states]
+        self.__minimize(eq_classes, [])
 
     def show(self):
         print(f"    States => {self.__states}")
@@ -97,6 +98,8 @@ class FSM():
     # ----------------- PRIVATE METHODS -------------------
     # -----------------------------------------------------
 
+    # -------------------- READ METHODS -------------------
+
     def __read(self, word, state):
         if len(word) < 1 or word == lmbda:
             if state in self.__final_states:
@@ -113,6 +116,59 @@ class FSM():
         print(
             f"\t({state}, {word}) => ({next_state}, {next_word})")
         self.__read(next_word, next_state)
+
+    # ---------------- MINIMIZE METHODS ------------------
+
+    def __minimize(self, current, previous):
+        if current == previous:
+            print(f"Final equivalence classes: {current}")
+            self.__minimize_update(current)
+            print("Minimization completed!")
+            return
+        equivalence = []
+        for s in current:
+            eq_class = s.copy()
+            while eq_class:
+                r_state = random.choice(tuple(eq_class))
+                new_set = set()
+                for state in eq_class:
+                    if self.__are_equivalent(r_state, state, current):
+                        new_set.add(r_state)
+                        new_set.add(state)
+                eq_class -= new_set
+                equivalence.append(new_set)
+        self.__minimize(equivalence, current)
+
+    def __minimize_update(self, eq_classes):
+        for c in eq_classes:
+            if len(c) > 1:
+                new_state = random.choice(tuple(c))
+                print(f"States {c} minimized to => {new_state}")
+                self.__states -= c
+                self.__states.add(new_state)
+                if new_state in self.__final_states:
+                    self.__final_states -= c
+                    self.__final_states.add(new_state)
+                for transition in self.__transitions.values():
+                    for dest in transition.values():
+                        if dest[0] in c:
+                            dest[0] = new_state
+                for state in c:
+                    if state != new_state:
+                        del self.__transitions[state]
+
+    def __are_equivalent(self, state1, state2, groups):
+        """ Checks equivalence between two states
+        """
+        for symbol in self.__alphabet:
+            s1 = self.__transitions[state1][symbol][0]
+            s2 = self.__transitions[state2][symbol][0]
+            for eq_class in groups:
+                if s1 in eq_class and s2 not in eq_class or s2 in eq_class and s1 not in eq_class:
+                    return False
+        return True
+
+    # --------------- DETERMINIZE METHODS ----------------
 
     def __get_next_state(self, curr_state, symbol):
         new_state = set()
