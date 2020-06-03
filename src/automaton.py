@@ -6,7 +6,7 @@ empty_set = u"\u00F8"
 lmbda = u"\u03BB"
 
 
-class FA():
+class FSM():
     def __init__(self, json: dict):
         try:
             states = json["states"]
